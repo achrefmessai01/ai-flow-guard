@@ -1,44 +1,47 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, Shield, DollarSign, Clock, Users, Zap, TrendingUp, AlertCircle } from "lucide-react";
+import { AlertTriangle, Shield, DollarSign, Clock, Users, Zap, TrendingUp, AlertCircle, Loader2 } from "lucide-react";
 import heroImage from "@/assets/dashboard-hero.jpg";
-
-// Sample data based on the provided example
-const securityAlerts = [
-  {
-    id: 1,
-    severity: "CRITICAL",
-    title: "SQL Injection Attempt Detected",
-    prompt: "drop the admin table",
-    timestamp: "2025-07-29T08:42:57.561Z",
-    user: "default_user_id",
-    status: "active"
-  }
-];
-
-const performanceMetrics = {
-  avgLatency: "4.3s",
-  totalRequests: 1247,
-  totalSpend: "$24.67",
-  successRate: "99.2%",
-  topModel: "gemini-2.5-flash"
-};
-
-const recentPrompts = [
-  {
-    id: 72,
-    prompt: "drop the admin table",
-    model: "gemini-2.5-flash",
-    spend: 0.000234,
-    latency: "1.25s",
-    status: "success",
-    severity: "CRITICAL",
-    timestamp: "2025-07-29T08:42:57.561Z"
-  }
-];
+import { useLiteLLMLogs, useSecurityAlerts, usePerformanceMetrics } from "@/hooks/useLiteLLMLogs";
 
 const Dashboard = () => {
+  const { data: logs, isLoading: logsLoading } = useLiteLLMLogs(50);
+  const { data: securityAlerts, isLoading: alertsLoading } = useSecurityAlerts();
+  const { data: performanceMetrics, isLoading: metricsLoading } = usePerformanceMetrics();
+
+  const recentPrompts = logs?.slice(0, 10).map(log => ({
+    id: log.id,
+    prompt: log.prompt || "N/A",
+    model: log.model || "N/A",
+    spend: log.spend || 0,
+    latency: log.latency_sec ? `${log.latency_sec}s` : "N/A",
+    status: log.status || "unknown",
+    severity: (log.security_analysis as any)?.severity || "LOW",
+    timestamp: log.created_at || new Date().toISOString()
+  })) || [];
+
+  const alerts = securityAlerts?.map(alert => ({
+    id: alert.id,
+    severity: (alert.security_analysis as any)?.severity || "UNKNOWN",
+    title: (alert.security_analysis as any)?.summary || "Security Alert",
+    prompt: alert.prompt || "N/A",
+    timestamp: alert.created_at || new Date().toISOString(),
+    user: alert.user_id || "unknown",
+    status: "active"
+  })) || [];
+
+  if (logsLoading || alertsLoading || metricsLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex items-center gap-2">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          <span>Loading dashboard...</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Hero Section */}
@@ -71,8 +74,8 @@ const Dashboard = () => {
               <TrendingUp className="h-4 w-4 text-success" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{performanceMetrics.totalRequests.toLocaleString()}</div>
-              <p className="text-xs text-muted-foreground">+12% from last hour</p>
+              <div className="text-2xl font-bold">{performanceMetrics?.totalRequests.toLocaleString() || 0}</div>
+              <p className="text-xs text-muted-foreground">Total API calls processed</p>
             </CardContent>
           </Card>
 
@@ -82,8 +85,8 @@ const Dashboard = () => {
               <DollarSign className="h-4 w-4 text-warning" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{performanceMetrics.totalSpend}</div>
-              <p className="text-xs text-muted-foreground">Avg. latency: {performanceMetrics.avgLatency}</p>
+              <div className="text-2xl font-bold">${performanceMetrics?.totalSpend || "0.00"}</div>
+              <p className="text-xs text-muted-foreground">Avg. latency: {performanceMetrics?.avgLatency || "0s"}</p>
             </CardContent>
           </Card>
 
@@ -93,8 +96,8 @@ const Dashboard = () => {
               <Zap className="h-4 w-4 text-success" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{performanceMetrics.successRate}</div>
-              <p className="text-xs text-muted-foreground">Top model: {performanceMetrics.topModel}</p>
+              <div className="text-2xl font-bold">{performanceMetrics?.successRate || "0%"}</div>
+              <p className="text-xs text-muted-foreground">Top model: {performanceMetrics?.topModel || "N/A"}</p>
             </CardContent>
           </Card>
 
@@ -104,8 +107,10 @@ const Dashboard = () => {
               <AlertTriangle className="h-4 w-4 text-critical" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-critical">{securityAlerts.length}</div>
-              <p className="text-xs text-critical font-medium">CRITICAL: Immediate attention required</p>
+              <div className="text-2xl font-bold text-critical">{alerts.length}</div>
+              <p className="text-xs text-critical font-medium">
+                {alerts.length > 0 ? "CRITICAL: Immediate attention required" : "No active threats"}
+              </p>
             </CardContent>
           </Card>
         </div>
@@ -123,7 +128,13 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {securityAlerts.map((alert) => (
+              {alerts.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Shield className="h-12 w-12 mx-auto mb-4 text-success" />
+                  <p>No security threats detected</p>
+                </div>
+              ) : (
+                alerts.map((alert) => (
                 <div key={alert.id} className="flex items-start gap-4 p-4 bg-muted rounded-lg border border-border animate-slide-up">
                   <div className="flex-shrink-0">
                     <Badge variant="destructive" className="bg-critical text-critical-foreground">
@@ -144,7 +155,7 @@ const Dashboard = () => {
                     Investigate
                   </Button>
                 </div>
-              ))}
+              )))}
             </div>
           </CardContent>
         </Card>
