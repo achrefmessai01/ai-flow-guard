@@ -59,6 +59,23 @@ export const useSecurityAlerts = () => {
   });
 };
 
+export const useOverallPerformance = () => {
+  return useQuery({
+    queryKey: ["overall_performance"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("overall_perf")
+        .select("data")
+        .limit(1)
+        .single();
+
+      if (error) throw error;
+      return data?.data?.output || null;
+    },
+    refetchInterval: 60000, // Refresh every minute
+  });
+};
+
 export const usePerformanceMetrics = () => {
   return useQuery({
     queryKey: ["performance_metrics"],

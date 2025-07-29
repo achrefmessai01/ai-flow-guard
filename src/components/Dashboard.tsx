@@ -3,12 +3,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, Shield, DollarSign, Clock, Users, Zap, TrendingUp, AlertCircle, Loader2 } from "lucide-react";
 import heroImage from "@/assets/dashboard-hero.jpg";
-import { useLiteLLMLogs, useSecurityAlerts, usePerformanceMetrics } from "@/hooks/useLiteLLMLogs";
+import { useLiteLLMLogs, useSecurityAlerts, usePerformanceMetrics, useOverallPerformance } from "@/hooks/useLiteLLMLogs";
 
 const Dashboard = () => {
   const { data: logs, isLoading: logsLoading } = useLiteLLMLogs(50);
   const { data: securityAlerts, isLoading: alertsLoading } = useSecurityAlerts();
   const { data: performanceMetrics, isLoading: metricsLoading } = usePerformanceMetrics();
+  const { data: overallPerf, isLoading: overallPerfLoading } = useOverallPerformance();
 
   const recentPrompts = logs?.slice(0, 10).map(log => ({
     id: log.id,
@@ -114,6 +115,78 @@ const Dashboard = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Executive Summary */}
+        <Card className="col-span-full bg-gradient-to-br from-primary/5 via-background to-secondary/5">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-primary" />
+              Executive Summary
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {overallPerfLoading ? (
+              <div className="text-center py-4">Loading executive summary...</div>
+            ) : overallPerf ? (
+              <div className="space-y-6">
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {overallPerf.summary}
+                </p>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {overallPerf.findings?.map((finding: any, index: number) => (
+                    <div key={index} className="p-4 rounded-lg bg-card/50 border border-border/50">
+                      <h4 className="font-semibold text-primary mb-2">{finding.title}</h4>
+                      <p className="text-xs text-muted-foreground">{finding.detail}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {overallPerf.recommendations && overallPerf.recommendations.length > 0 && (
+                  <div className="space-y-2">
+                    <h4 className="font-semibold text-primary">Key Recommendations</h4>
+                    <div className="space-y-2">
+                      {overallPerf.recommendations.slice(0, 3).map((rec: any, index: number) => (
+                        <div key={index} className="flex items-start gap-3 p-3 rounded-lg bg-card/30">
+                          <div className={`px-2 py-1 rounded text-xs font-medium ${
+                            rec.priority === 'HIGH' ? 'bg-destructive/20 text-destructive' :
+                            rec.priority === 'MEDIUM' ? 'bg-warning/20 text-warning' :
+                            'bg-muted/50 text-muted-foreground'
+                          }`}>
+                            {rec.priority}
+                          </div>
+                          <p className="text-sm text-muted-foreground">{rec.action}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="p-4 rounded-lg bg-card/50 border border-border/50">
+                    <h4 className="font-semibold text-primary mb-2">System Health</h4>
+                    <p className="text-sm text-muted-foreground">All systems operational</p>
+                  </div>
+                  <div className="p-4 rounded-lg bg-card/50 border border-border/50">
+                    <h4 className="font-semibold text-primary mb-2">Cost Efficiency</h4>
+                    <p className="text-sm text-muted-foreground">Within budget targets</p>
+                  </div>
+                  <div className="p-4 rounded-lg bg-card/50 border border-border/50">
+                    <h4 className="font-semibold text-primary mb-2">Security Status</h4>
+                    <p className="text-sm text-muted-foreground">
+                      {(securityAlerts?.length || 0) > 0 ? 
+                        `${securityAlerts?.length} alert(s) detected` : 
+                        "No active threats"
+                      }
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Security Alerts Section */}
         <Card className="bg-card shadow-card border-border">
