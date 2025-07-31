@@ -4,8 +4,10 @@ import { Button } from "@/components/ui/button";
 import { AlertTriangle, Shield, DollarSign, Clock, Users, Zap, TrendingUp, AlertCircle, Loader2 } from "lucide-react";
 import heroImage from "@/assets/dashboard-hero.jpg";
 import { useLiteLLMLogs, useSecurityAlerts, usePerformanceMetrics, useOverallPerformance } from "@/hooks/useLiteLLMLogs";
+import { useNavigate } from "react-router-dom";
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const { data: logs, isLoading: logsLoading } = useLiteLLMLogs(50);
   const { data: securityAlerts, isLoading: alertsLoading } = useSecurityAlerts();
   const { data: performanceMetrics, isLoading: metricsLoading } = usePerformanceMetrics();
@@ -61,7 +63,7 @@ const Dashboard = () => {
               </div>
               <div>
                 <h1 className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-                  AI DevSecOps Control Center
+                  PWC Admin Monitoring Dashboard
                 </h1>
                 <div className="flex items-center gap-2 mt-2">
                   <div className="w-2 h-2 bg-success rounded-full animate-pulse"></div>
@@ -230,7 +232,12 @@ const Dashboard = () => {
                 </div>
                 <span className="text-xl font-bold">Active Security Threats</span>
               </CardTitle>
-              <Button variant="outline" size="sm" className="border-critical/30 text-critical hover:bg-critical/10">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="border-critical/30 text-critical hover:bg-critical/10"
+                onClick={() => navigate('/alerts-analysis')}
+              >
                 View All Alerts
               </Button>
             </div>
@@ -263,7 +270,12 @@ const Dashboard = () => {
                       <span className="font-medium">Time: {new Date(alert.timestamp).toLocaleTimeString()}</span>
                     </div>
                   </div>
-                  <Button variant="outline" size="sm" className="border-critical/30 text-critical hover:bg-critical/10 group-hover:scale-105 transition-smooth">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="border-critical/30 text-critical hover:bg-critical/10 group-hover:scale-105 transition-smooth"
+                    onClick={() => navigate('/alerts-analysis')}
+                  >
                     Investigate
                   </Button>
                 </div>
